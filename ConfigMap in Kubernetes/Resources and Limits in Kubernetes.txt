@@ -1,0 +1,43 @@
+In Kubernetes, resource requests and limits are used to manage and allocate the necessary CPU and memory resources for containers in a Pod. This ensures that applications are properly isolated in terms of resource consumption and can help prevent a single application from overwhelming the node it runs on.
+
+Requests: Specify the minimum amount of CPU and memory resources required for a container to run. Kubernetes uses these values to schedule the Pod onto a node with sufficient available resources.
+
+Limits: Define the maximum amount of resources a container is allowed to consume. If a container exceeds its CPU limit, it may be throttled, and if it exceeds its memory limit, it may be terminated by Kubernetes.
+
+Create a pod with resource limit and request
+
+nano  limit-and-request-example.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: limit-and-request-example
+spec:
+  containers:
+  - name: example-container
+    image: nginx:latest
+    resources:
+      limits:
+        cpu: "1"
+        memory: "512Mi"
+      requests:
+        cpu: "0.5"
+        memory: "256Mi"
+
+Kubectl apply -f limit-and-request-example.yaml
+
+CPU & Memory Details:
+
+Requests: The container requests 0.5 CPU and 256Mi memory, meaning it needs at least this amount of resources to be scheduled on a node.
+Limits: The container is limited to a maximum of 1 CPU and 512Mi memory. It will not be allowed to use more than this, ensuring that it doesn’t consume excessive resources.
+
+Kubectl get pods -A
+
+Kubectl describe po limit-and-request-example
+
+Benefits:
+Requests ensure that a Pod is only scheduled onto a node with sufficient available resources.
+Limits prevent containers from monopolizing the node’s resources, ensuring fair resource allocation across all containers in the cluster.
+
+
+
+
