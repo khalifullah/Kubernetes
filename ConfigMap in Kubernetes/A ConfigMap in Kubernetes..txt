@@ -1,0 +1,100 @@
+A ConfigMap in Kubernetes is a resource used to store configuration data in a key-value format that is non-confidential. This allows you to decouple configuration artifacts from container images, ensuring flexibility and consistency across environments. ConfigMaps are especially useful for managing configurations like environment variables, configuration files, or command-line arguments for applications.
+
+Pods can consume data from ConfigMaps in several ways:
+
+As environment variables: Injecting configuration directly into the container's environment.
+As command-line arguments: Referencing configuration data within container commands.
+As files mounted in volumes: Exposing configuration data as files in the container's filesystem.
+
+#################################################################################################
+
+Consuming ConfigMap as Environment Variables:
+
+kubectl create configmap configmap-1 --from-literal=name=first-configmap
+
+nano cm-1.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: configmap-demo
+spec:
+  containers:
+  - name: demo-container
+    image: nginx
+    envFrom:
+    - configMapRef:
+        name: configmap-1
+
+kubectl apply -f cm-1.yaml
+kubectl get po 
+kubectl exec -it configmap-demo -- printenv  ( to verify that the config map is attached or not )
+
+##################################################################################################
+
+Accessing Specific Keys from ConfigMap as Environment Variables:
+
+kubectl create configmap configmap-2 --from-literal=name=second-configmap  --from-literal=colour=blue
+
+vim cm-2.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: configmap-demo-2
+spec:
+  containers:
+  - name: demo-container
+    image: nginx
+    env:
+    - name: COLOUR
+      valueFrom:
+        configMapKeyRef:
+          name: configmap-2
+          key: colour
+
+kubectl apply -f cm-2.yaml
+kubectl get po 
+kubectl exec -it configmap-demo-2 -- printenv  ( to verify that the config map is attached or not )
+
+##################################################################################################
+
+Using ConfigMap as a Volume:
+
+touch /data-file
+username="root"
+password="123456"
+
+kubectl create configmap configmap-3 --from-file=/data-file
+
+kubectl get cm
+
+touch cm-3.yaml
+vim cm-3.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: configmap-demo-3
+spec:
+  containers:
+  - name: demo-container
+    image: nginx
+    volumeMounts:
+    - name: config-volume
+      mountPath: /etc/config
+  volumes:
+  - name: config-volume
+    configMap:
+      name: configmap-3
+
+kubectl apply -f cm-3.yaml
+
+kubectl exec -it configmap-demo-3 -- bash
+cd /etc/config/
+ls
+
+
+
+
+
+
+
