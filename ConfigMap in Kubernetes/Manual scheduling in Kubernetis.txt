@@ -1,0 +1,41 @@
+Manual scheduling in Kubernetes refers to explicitly specifying the node on which a pod should run. This is helpful in scenarios where you want to control the placement of pods for resource management or troubleshooting purposes.
+
+Steps for Manual Scheduling in Kubernetes:
+
+Step 1: Create a Pod using an Imperative Command
+Generate a pod manifest file (pod.yaml) using the following command:
+kubectl run mypod --image=nginx --dry-run=client -o yaml > /Deployment/pod.yaml
+
+Step 2: View the Pod YAML
+Open the pod.yaml file created in the previous step to see the basic pod structure:
+
+Step 3: Add nodeName for Manual Scheduling
+To manually schedule the pod on a specific node (for example, node1), modify the spec section of the YAML file to include the nodeName field:
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: mypod
+  name: mypod
+spec:
+  containers:
+  - image: nginx
+    name: mypod
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+  nodeName: node1    # This specifies the node where the pod should run
+status: {}
+
+Step 4: Apply the Pod Manifest
+Use the following command to apply the changes and create the pod:
+kubectl apply -f /Deployment/pod.yaml
+
+Step 5: Verify the Node on which the Pod is Running
+Check which node the pod is running on by using the following command:
+kubectl get pods -o wide
+
+Key Concept:
+Manual Scheduling: This method bypasses Kubernetes' default scheduler, and you specify the node where the pod must run by setting the nodeName field.
+This approach can be useful in specific cases where you want to run a pod on a particular node for testing or resource-specific reasons.

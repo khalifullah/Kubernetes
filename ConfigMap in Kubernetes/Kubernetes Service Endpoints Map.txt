@@ -1,0 +1,136 @@
+Kubernetes Service Endpoints map a Service to the IP addresses of the Pods that it routes traffic to. This process allows the frontend Pods to communicate with the backend Pods, even though the backend Pods' IP addresses might change dynamically.
+
+Here’s a step-by-step guide on how to create a connection between frontend and backend Pods using Kubernetes Services and Endpoints.
+
+Step 1: Creating Backend PODS
+Create two backend Pods that will serve as the backend for the frontend:
+
+kubectl run backend-pod-1 --image=nginx
+kubectl run backend-pod-2 --image=nginx
+
+
+Step 2: Creating Frontend PODS
+Create a frontend Pod that will use curl to communicate with the backend Pods:
+kubectl run frontend-pod --image=curlimages/curl:7.86.0 --command -- sleep 3600
+
+
+Step 3: Test the Connection between Frontend and Backend PODs
+List the Pods and their IP addresses:
+
+kubectl get pods -o wide
+
+Access the frontend Pod:
+kubectl exec -it frontend-pod -- /bin/sh
+
+Inside the frontend Pod, install curl:
+apt-get update && apt-get -y install curl
+curl <BACKEND-POD-1-IP>
+
+
+Step 4: Create a new Service
+nano service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+   name: k8s-service
+spec:
+   ports:
+   - port: 8080
+     targetPort: 80
+	 
+	 
+kubectl apply -f service.yaml
+kubectl get service
+kubectl describe service k8s-service
+
+
+
+Step 5: Associate Endpoints with Service
+nano endpoint.yaml
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: k8s-service
+subsets:
+  - addresses:
+      - ip: 10.244.1.5 (pod-ip)
+      - ip: 10.244.2.7 (pod-ip)
+    ports:
+      - port: 80
+	  
+kubectl apply -f endpoint.yaml
+
+Step 6: Test the Connection
+
+kubectl exec -it frontend-pod -- /bin/sh
+curl <SERVICE-IP:8080>
+
+Step 7: Delete the Created Resources
+kubectl delete service k8s-service
+kubectl delete endpoints k8s-service
+kubectl delete pod backend-pod-1
+kubectl delete pod backend-pod-2
+kubectl delete pod frontend-pod
+
+
+         STEP 2
+
+
+First, create a Deployment that runs a simple Nginx server.
+vim nginx-deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+
+Apply this Deployment:
+kubectl apply -f nginx-deployment.yaml
+
+
+Next, create a Service that exposes the Nginx Pods.
+vim nginx-service.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+
+Apply this Service:
+kubectl apply -f nginx-service.yaml
+
+After creating the Service, you can view the Endpoints associated with it:
+kubectl get endpoints nginx-service
+
+The output will show the IP addresses of the Pods that are part of the Service:
+NAME            ENDPOINTS                                     AGE
+nginx-service   10.244.0.2:80,10.244.0.3:80,10.244.0.4:80     10s
+
+
+
+
+
+
+

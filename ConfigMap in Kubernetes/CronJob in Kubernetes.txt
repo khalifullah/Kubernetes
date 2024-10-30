@@ -1,0 +1,38 @@
+A CronJob in Kubernetes is used to run jobs on a scheduled basis, similar to the Unix/Linux cron utility. It allows you to automate tasks such as backups, reports, or regular maintenance operations at specified intervals. CronJobs create Jobs at scheduled times, and these Jobs can execute one or more Pods to perform the defined tasks.
+
+Step1: Create a file named as cronjob.yaml 
+Touch cronjob.yaml
+
+Step2: Edit the content.
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata: 
+  name: hello
+spec: 
+  jobTemplate: 
+    spec: 
+      template: 
+        spec: 
+          containers: 
+            - 
+              args: 
+                - /bin/sh
+                - "-c"
+                - "date; echo Hello from the Kubernetes cluster"
+              image: busybox
+              name: hello
+          restartPolicy: OnFailure
+  schedule: "*/1 * * * *"
+
+Key Components:
+
+schedule: The schedule expression in Cron format (e.g., */1 * * * * runs every minute).
+jobTemplate: Defines the job that will be created when the CronJob is triggered.
+containers: Specifies the container image (busybox in this case) and the command to run.
+ 
+Step3: Run the apply cmd. 
+ kubectl apply  -f cronjob.yaml
+
+cronjob.batch “hello” created
+kubectl get cronjobs hello
+

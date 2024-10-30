@@ -1,0 +1,45 @@
+Node Selector in Kubernetes
+A Node Selector allows you to schedule pods on specific nodes by using labels. This is a basic form of affinity where you label a node and then specify those labels in the pod's YAML configuration so that the pod only runs on nodes with matching labels.
+
+Steps to Use Node Selector
+Step 1: Verify the Labels on Nodes
+First, check the labels and details of the node where you want the pod to run.
+
+kubectl get nodes
+kubectl describe node <node-name>
+
+Step 2: Label the Worker Node
+Label the node where you want the pod to be scheduled.
+kubectl label node node-1 app=web
+
+Verify the labels on the node:
+kubectl get nodes --show-labels
+
+Step 3: Create NodeSelector Pod YAML Configuration
+Create a YAML file (nodeselector.yaml) to define a pod with a nodeSelector. This will ensure the pod is scheduled on nodes that have the label app=web.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: service-pod
+spec:
+  containers:
+  - name: service-pod
+    image: nginx
+  nodeSelector:
+    app: web
+
+Step 4: Apply the YAML Configuration
+Run the following command to create the pod using the YAML configuration:
+kubectl apply -f nodeselector.yaml
+
+Step 5: Verify the Pod Scheduling
+Check where the pod is running, ensuring it is scheduled on the node with the app=web label.
+kubectl get pods -o wide
+
+Step 6: Clean Up Resources
+To remove the pod, use:
+kubectl delete -f nodeselector.yaml
+
+Step 7: Remove the Label from the Node
+If you no longer need the label on the node, you can remove it:
+kubectl label node node-1 app-

@@ -1,0 +1,49 @@
+Replica Set in Kubernetes
+A ReplicaSet ensures that a specified number of pod replicas are running at any given time. If a pod goes down, the ReplicaSet automatically replaces it. The concept behind a ReplicaSet is to maintain high availability by ensuring that multiple copies (replicas) of a pod are running.
+
+Steps to Create and Manage a Replica Set
+Step 1: Create a ReplicaSet
+Create a YAML file named replicaset.yaml to define a ReplicaSet with 5 replicas.
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: k8s-replicaset
+  namespace: replicaset  # Specify the namespace
+spec:
+  replicas: 5            # Specify the number of pod replicas
+  selector:
+    matchLabels:
+      tier: frontend      # The label used to select the pods
+  template:
+    metadata:
+      labels:
+        tier: frontend    # Pod label that matches the selector
+    spec:
+      containers:
+      - name: web
+        image: nginx      # The container image
+
+Apply the ReplicaSet configuration:
+kubectl apply -f replicaset.yaml
+
+Step 2: Verify Replica Set Creation
+You can check the status of the ReplicaSet and the running pods:
+kubectl get replicaset -n replicaset
+kubectl get pods -n replicaset
+
+Step 3: Test the Replica Set Capability
+To test the self-healing capability of the ReplicaSet, delete one of the pods from the ReplicaSet:
+kubectl delete pod <pod-name> -n replicaset
+
+After deletion, a new pod will automatically be created to ensure that 5 replicas are maintained:
+kubectl get pods -n replicaset --show-labels
+
+Step 4: Delete the ReplicaSet
+To clean up resources, delete the ReplicaSet. This will also delete all the pods created by it:
+kubectl delete -f replicaset.yaml
+
+Explanation:
+
+replicas: 5: This ensures that 5 pod replicas are maintained.
+Self-healing: If one pod is deleted or fails, the ReplicaSet will create another pod to maintain the desired number of replicas.

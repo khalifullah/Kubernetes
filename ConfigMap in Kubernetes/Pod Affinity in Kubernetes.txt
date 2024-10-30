@@ -1,0 +1,82 @@
+Pod Affinity in Kubernetes
+Pod Affinity allows you to specify that certain pods should be placed on the same node or within the same topology (like the same availability zone) as other pods, based on the labels of those existing pods. This helps in scenarios where pods need to be close to each other for better performance or data locality.
+
+Steps to Set Up Pod Affinity
+Step 1: Create a Normal Pod with Labels
+Create a basic pod with a label security: S1. This pod will be used as a reference for pod affinity.
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod-affinity
+  labels:
+    security: S1
+spec:
+  containers:
+  - name: with-pod-affinity1
+    image: registry.k8s.io/pause:2.0
+
+Apply the pod configuration:
+kubectl apply -f pod-affinity.yaml
+
+Step 2: Create Another Pod with Pod Affinity
+This second pod will use pod affinity, ensuring it is scheduled on the same node as the pod created in Step 1 (which has the label security: S1).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-pod-affinity
+spec:
+  containers:
+  - name: my-container
+    image: nginx
+  affinity:
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: security
+            operator: In
+            values:
+            - S1
+        topologyKey: kubernetes.io/hostname
+
+Apply the pod configuration:
+kubectl apply -f 1st-pod-with-pod-affinity.yaml
+
+Step 3: Verify Pod Affinity
+Check that the pod is running with pod affinity on the same node as the first pod:
+kubectl get pods -o wide
+
+Step 4: Create Another Pod with Pod Affinity
+You can create another pod with pod affinity to further demonstrate the concept.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: 2nd-pod-with-affinity
+spec:
+  containers:
+  - name: my-container
+    image: nginx
+  affinity:
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: security
+            operator: In
+            values:
+            - S1
+        topologyKey: kubernetes.io/hostname
+
+Apply the pod configuration:
+kubectl apply -f 2nd-with-pod-affinity.yaml
+
+Step 5: Verify Pod Scheduling
+Verify where the second pod is running and check if it is scheduled on the same node as the first pod:
+kubectl get pods -o wide
+
+Explanation:
+
+Pod Affinity ensures that the pod is scheduled close to other pods based on label matching.
+topologyKey: kubernetes.io/hostname ensures the pod is scheduled on the same node as the reference pod.
+

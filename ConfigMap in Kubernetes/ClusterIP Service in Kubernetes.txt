@@ -1,0 +1,56 @@
+ClusterIP Service
+
+Default Service Type:
+When you create a service without specifying a type, it defaults to ClusterIP.
+
+Access Scope:
+Internal-only service, meaning it is accessible only within the cluster.
+Pods can communicate with the service using the internal cluster IP, but external traffic (outside of the cluster) cannot reach it directly.
+
+Usage:
+Ideal for internal communication between microservices or within the cluster.
+
+Deployment YAML Example:
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  #namespace: my-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+
+
+Service YAML Example:
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+  #namespace: my-namespace
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+
+Access:
+Pods communicate via the service name (nginx-service) or the internal cluster IP assigned to it.
+External users cannot directly access the service.
+
+Use Case:
+Used when your service is only needed within the cluster, such as in microservice architectures where one service communicates with another service.

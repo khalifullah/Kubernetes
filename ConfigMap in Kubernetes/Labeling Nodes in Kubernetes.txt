@@ -1,0 +1,31 @@
+Labeling Nodes in Kubernetes
+Labels in Kubernetes are key-value pairs used to organize and select resources like nodes and pods. Here's a step-by-step guide to label nodes in Kubernetes.
+
+
+Step 1: View the Labels of Nodes To view the current labels on all nodes in your cluster:
+kubectl get nodes --show-labels  
+
+Step 2: Label a Specific Node To add a label to a specific node, use the following command. For example, to label node1 with disk-type=ssd:
+kubectl label nodes node1 disk-type=ssd 
+
+Step 3: Label the Node You can apply a label to any node using this format:
+kubectl label nodes <node-name> <label-key>=<label-value> 
+
+Step 4: Remove a Node Label To remove a specific label from a node, use the following command. For example, to remove the disk-type label:
+kubectl label nodes <node-name> disk-type-
+
+Step 5: Create a Pod Using Node Labels To schedule a pod to run on a node with a specific label (like disk-type=ssd), create a YAML file:
+nano labels.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: labels-example
+spec:
+  containers:
+  - name: my-container
+    image: nginx
+  nodeSelector:
+    disk-type: ssd
+
+
+

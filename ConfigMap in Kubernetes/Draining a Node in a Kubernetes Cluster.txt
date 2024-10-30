@@ -1,0 +1,39 @@
+Draining a Node in a Kubernetes Cluster
+Draining a node is a process in Kubernetes to safely evict all the pods from a node to prepare it for maintenance or decommissioning. Here are the steps to drain a node:
+
+Step 1: Get the List of Nodes and Running Pods
+
+First, check the nodes in your cluster and identify which node you want to drain. You can also view the running Pods on each node:
+kubectl get nodes -A -o wide                           #cmd
+
+Step 2: Cordon the Node
+
+Before draining a node, you should cordon it. This marks the node as unschedulable, so no new Pods will be scheduled on it:
+kubectl cordon <node-name>                             #cmd
+
+Step 3: Drain the Node
+
+Next, drain the node. This will safely evict all the Pods running on the node:
+kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data   #cmd
+
+--ignore-daemonsets: Prevents DaemonSet Pods from being evicted.
+--delete-emptydir-data: Removes emptyDir data which is tied to the node.
+Once the command is executed, the node is drained, and all Pods that are not managed by DaemonSets or have emptyDir volumes will be gracefully evicted and rescheduled on other nodes.
+
+
+Re-joining the Node in Kubernetes Cluster
+After you are done with the maintenance or changes on the node, you can bring it back online by uncordoning the node.
+
+Step 1: Uncordon the Node
+
+To make the node schedulable again and allow new Pods to be scheduled:
+kubectl uncordon <node-name>                                         #cmd
+
+Step 2: Verify the Node and Pods
+
+Check if the node is back to being schedulable and if Pods are being scheduled correctly:
+kubectl get nodes                                                    #cmd
+kubectl get pods                                                     #cmd
+
+  
+

@@ -1,0 +1,55 @@
+NodePort Service
+
+Access Scope:
+Exposes the service to external traffic by opening a specific port (in the range 30000-32767) on each node in the cluster.
+External users can access the service by reaching any node's IP address using the specified NodePort.
+
+Usage:
+Used when you want to expose a service to external clients without using a LoadBalancer.
+Useful in environments where a LoadBalancer service is not available or for local development/testing.
+
+Deployment YAML Example:
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  #namespace: my-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+
+Service YAML Example:
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-nodeport-service
+  #namespace: my-namespace
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30036 # Optional: specify a port in the range 30000-32767
+  type: NodePort
+
+Access:
+To access the service externally, you need to use the node's IP address and the specified NodePort (e.g., http://<node-ip>:30036).
+This will forward traffic from the node's port to the service's targetPort on the respective pod.
+
+Use Case:
+Useful when testing services locally or on a cloud where a LoadBalancer isn’t required.
+Can also be used as a quick way to expose a service for external access in a development environment.

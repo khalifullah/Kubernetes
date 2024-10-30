@@ -1,0 +1,19 @@
+Steps to Create and Apply a Namespace in Kubernetes
+
+Step 1: Create a YAML file named redis-namespace.yaml
+Use the following command to create the file:
+nano redis-namespace.yaml
+
+Add the following content to the file:
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: redis-namespace
+
+Step 2: Apply the YAML file using kubectl
+After saving the file, apply it using the following command:
+kubectl apply -f redis-namespace.yaml
+
+Step 3: Verify the Namespace
+Check if the namespace has been created by running:
+kubectl get namespaces

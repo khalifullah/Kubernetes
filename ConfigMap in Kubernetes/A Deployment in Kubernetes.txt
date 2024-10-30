@@ -1,0 +1,66 @@
+A Deployment in Kubernetes automates the process of updating your application instances, managing their availability, and scaling them. Deployments provide features like rolling updates, scaling, and rollbacks, ensuring minimal downtime during updates.
+
+In cases where an update fails (like using a wrong image version), Kubernetes allows you to roll back the Deployment to a previous stable version.
+
+Example Scenario:
+You deployed an application using the nginx image and updated it to nginx:1, nginx:2, etc. If the deployment with nginx:2 fails, you need to roll back to the previous working version (e.g., nginx:1).
+
+Step 1: Create a new deployment:
+nano deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-deployment
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        tier: frontend
+    spec:
+      containers:
+      - name: php-redis
+        image: nginx
+kubectl apply -f deployment.yaml
+kubectl get replicasets
+
+
+Step 2: Update the Image in Deployments
+Modify image from nginx to nginx:1.17.3
+
+Final code will look as follows:
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-deployment
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        tier: frontend
+    spec:
+      containers:
+      - name: php-redis
+        image: nginx:1.17.3
+kubectl apply -f deployment.yaml
+
+Step 3: Check for Deployment Events
+kubectl describe deployment kube-deployment
+
+Step 4: Check for Rollout History
+kubectl rollout history deployment/kube-deployment
+
+kubectl rollout history deployment/kube-deployment --revision 1
+kubectl rollout history deployment/kube-deployment --revision 2
+
+Step 5: To go for the back step
+kubectl rollout undo deployment/kube-deployment --to-revision=2
