@@ -1,0 +1,105 @@
+sudo mkdir -p /srv/nfs/mogo
+sudo chown -R nobody:nobody /srv/nfs/mogo  # Set ownership to nobody
+sudo chmod 777 /srv/nfs/mogo  # Set permissions to allow full access
+
+echo "Hello, MOGO!" > /srv/nfs/mogo/index.html
+
+echo "/srv/nfs/mogo *(rw,sync,no_subtree_check,no_root_squash)" | sudo tee -a /etc/exports
+
+sudo exportfs -rav
+
+sudo systemctl start nfs-server
+sudo systemctl enable nfs-server
+
+sudo exportfs -v
+
+###################################################
+
+mkdir /mogo
+cd /mogo
+
+vim nfs-pv.yaml
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-pv-mogo
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany  # NFS allows multiple pods to read and write
+  nfs:
+    path: /srv/nfs/kubedata  # Path to the exported NFS directory
+    server: <NFS_SERVER_IP>  # Replace with the NFS server's IP address
+  persistentVolumeReclaimPolicy: Retain
+
+kubectl apply -f nfs-pv.yaml
+
+######################################################
+
+vim nfs-pvc.yaml
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nfs-pvc-mogo
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+
+kubectl apply -f nfs-pvc.yaml
+
+######################################################
+
+vim mongo-pod.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mongo-pod
+  labels:
+    app: mongo-app  # Ensure this matches the service selector
+spec:
+  containers:
+  - name: mongo-container
+    image: mongo  # MongoDB image
+    ports:
+    - containerPort: 27017
+    volumeMounts:
+    - mountPath: "/data/db"  # Path inside the container for MongoDB data
+      name: nfs-volume
+  volumes:
+  - name: nfs-volume
+    persistentVolumeClaim:
+      claimName: nfs-pvc-mogo # Using the NFS PVC
+
+kubectl apply -f mongo-pod.yaml
+
+#########################################################
+
+vim mongo-service.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service
+spec:
+  type: NodePort
+  ports:
+    - port: 27017
+      targetPort: 27017
+      nodePort: 30008  # NodePort (optional, can be auto-assigned)
+  selector:
+    app: mongo-app  # Match the pod label
+
+kubectl apply -f mongo-service.yaml
+
+################################################################
+
+To access the mongodb from mongodb compass gui
+
+mongodb://192.168.0.201:30008/test

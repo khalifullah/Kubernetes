@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pv
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  local:
+    path: /mnt/disks/my-disk  # This should be the path of the local disk on the worker node
+  persistentVolumeReclaimPolicy: Retain  # Ensures the data is retained after PVC deletion
+  storageClassName: manual
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi  # Same size as the PersistentVolume
+  storageClassName: manual
+
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+spec:
+  serviceName: "mongodb"
+  replicas: 3  # Number of MongoDB instances you want to run
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:4.4
+          volumeMounts:
+            - name: mongo-storage
+              mountPath: /data/db  # MongoDB's data directory
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-storage
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+        storageClassName: manual
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+spec:
+  ports:
+    - port: 27017
+      targetPort: 27017
+  clusterIP: None  # This ensures that each pod gets its own DNS entry
+  selector:
+    app: mongodb

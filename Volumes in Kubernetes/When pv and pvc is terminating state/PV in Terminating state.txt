@@ -1,0 +1,102 @@
+what happen when pv is in deleting state.
+
+###########################################
+
+mkdir -p /mnt/mongodb
+
+###########################################
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pv
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  local:
+    path: /mnt/mongodb  # This should be the path of the local disk on the worker node
+  persistentVolumeReclaimPolicy: Retain  # Ensures the data is retained after PVC deletion
+  storageClassName: manual
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi  # Same size as the PersistentVolume
+  storageClassName: manual
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-deployment
+spec:
+  replicas: 1  # Set the number of replicas based on your requirements
+  selector:
+    matchLabels:
+      app: mongo-app
+  template:
+    metadata:
+      labels:
+        app: mongo-app
+    spec:
+      containers:
+      - name: mongo-container
+        image: mongo  # MongoDB image
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - mountPath: "/data/db"  # Path inside the container for MongoDB data
+          name: mongo-volume  # Volume name
+      volumes:
+      - name: mongo-volume  # Name to reference the PVC
+        persistentVolumeClaim:
+          claimName: mongo-pvc  # Name of the PVC to use
+
+############################################################################################
+
+kubectl delete pv (pv-name)
+
+############################################################################################
+
+kubectl get pv (pv-name) -o yaml
+
+Look for the finalizers field under the PV configuration, which might look something like this:
+finalizers:
+  - kubernetes.io/pv-protection
+
+############################################################################################
+
+kubectl edit pv mongo-pv
+In the editor, remove the finalizers entry and save the changes.
+
+###########################################################################################
+
+Afterward, you can try deleting the PV again:
+
+kubectl delete pv mongo-pv
+
+###########################################################################################
+
+Check if the pod is still running: If the pod is still running, you can still access the data from the pod. Try checking the pod logs and verifying the data inside the container:
+kubectl exec -it <pod-name> -- /bin/bash
+If the pod is still running, you should be able to access your data from /data/db.
+
+##########################################################################################
+
+Recreate the PV and PVC: If the volume cannot be reclaimed or deleted, and if you're able to back up your data, you can manually create a new PV and PVC to point to a different disk or path and mount it to the same location.
+
+##########################################################################################
+
+Data Backup: If the pod is still running and has important data, you can back up the data by copying it from within the pod:
+
+kubectl cp <pod-name>:/data/db /path/on/host

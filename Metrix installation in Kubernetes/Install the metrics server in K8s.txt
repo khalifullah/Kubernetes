@@ -1,0 +1,170 @@
+Install the metrics server
+Now we have the EKS cluster; the next step is to install the metrics server on it. We can confirm whether it is already installed by running the below commands:
+
+kubectl get apiservice | grep -i metrics                                              #cmd
+
+If there is no output, we don't have a metrics server configured in our EKS cluster. We also can use the below command to see if we have metrics available:
+
+kubectl top pods -n kube-system                                                       #cmd           
+error: Metrics API not available
+
+Let’s install the metrics server. Clone the below repo:
+
+git clone --branch v1.0.0 git@github.com:nonai/k8s-example-files.git                  #cmd
+
+Apply the changes on the entire files as shown below:
+
+kubectl apply -f .                                                                    #cmd                          
+serviceaccount/metrics-server created
+clusterrole.rbac.authorization.k8s.io/system:aggregated-metrics-reader created
+clusterrole.rbac.authorization.k8s.io/system:metrics-server created
+rolebinding.rbac.authorization.k8s.io/metrics-server-auth-reader created
+clusterrolebinding.rbac.authorization.k8s.io/metrics-server:system:auth-delegator created
+clusterrolebinding.rbac.authorization.k8s.io/system:metrics-server created
+service/metrics-server created
+deployment.apps/metrics-server created
+apiservice.apiregistration.k8s.io/v1beta1.metrics.k8s.io created
+
+Verify the deployment:
+
+kubectl get pods -n kube-system                                                       #cmd
+NAME READY STATUS RESTARTS AGE
+aws-node-8g4wk 1/1 Running 0 29m
+coredns-86d9946576-g49sk 1/1 Running 0 38m
+coredns-86d9946576-kxw4h 1/1 Running 0 38m
+kube-proxy-64gjd 1/1 Running 0 29m
+metrics-server-9f459d97b-j4mnr 1/1 Running 0 117s
+
+List API services and check for metrics server:
+
+kubectl get apiservice |grep -i metrics                                               #cmd
+v1beta1.metrics.k8s.io kube-system/metrics-server True 2m26s
+
+List services in the kube-system namespace:
+
+kubectl get svc -n kube-system                                                        #cmd
+NAME TYPE CLUSTER-IP EXTERNAL-IP PORT(S) AGE
+kube-dns ClusterIP 10.100.0.10  53/UDP,53/TCP 40m
+metrics-server ClusterIP 10.100.152.164  443/TCP 2m58s
+
+We can access metrics API directly:
+
+kubectl get --raw /apis/metrics.k8s.io/v1beta1 | jq                                   #cmd
+
+Use kubectl to get metrics:
+
+kubectl top pods -n kube-system                                                       #cmd
+NAME CPU(cores) MEMORY(bytes)
+aws-node-8g4wk 4m 40Mi
+coredns-86d9946576-g49sk 2m 8Mi
+coredns-86d9946576-kxw4h 2m 8Mi
+kube-proxy-64gjd 1m 11Mi
+metrics-server-9f459d97b-j4mnr 3m 17Mi
+
+Install the VPA
+Now that we have created the EKS cluster and deployed the metrics server onto the cluster, let’s create the VPA.
+
+Clone the below repository, check out the specific commit (which is used for this tutorial), and change the directory to “autoscaler/vertical-pod-autoscaler.”
+
+git clone https://github.com/kubernetes/autoscaler.git                                #cmd
+git checkout bb860357f691313fca499e973a5241747c2e38b2                                 #cmd
+cd autoscaler/vertical-pod-autoscaler                                                 #cmd
+
+We can preview installation by using the below command:
+./hack/vpa-process-yamls.sh print
+
+Then, install the VPA:
+./hack/vpa-up.sh                                                                      #cmd
+
+Check the status of the pods (you should see some VPA related pods running):
+kubectl get pods -n kube-system                                                       #cmd
+
+####################################################################################################################################
+
+vim deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+  labels:
+    app: my-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-app-container
+        image: nginx:1.21  # Using NGINX as an example app
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 80
+
+vim vpa.yaml
+
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: my-app-vpa
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: my-app
+  updatePolicy:
+    updateMode: "Auto"  # Auto-adjust resource requests
+  resourcePolicy:
+    containerPolicies:
+    - containerName: "*"
+      mode: "Auto"
+      minAllowed:
+        cpu: "200m"
+        memory: "256Mi"
+      maxAllowed:
+        cpu: "2"
+        memory: "2Gi"
+
+Applying the YAML Files
+
+kubectl apply -f deployment.yaml                                                                       #cmd
+
+kubectl apply -f vpa.yaml                                                                              #cmd
+
+Verification
+
+kubectl get deployments                                                                                #cmd
+
+kubectl describe vpa my-app-vpa                                                                        #cmd
+
+Expose the my-app Deployment to Receive Traffic
+
+kubectl expose deployment my-app --type=NodePort --name=my-app-service                                 #cmd
+
+Install a Load-Testing Pod (Using hey)
+
+kubectl run load-generator --image=rakyll/hey -- /hey -z 1m -c 10 http://my-app-service:80             #cmd
+
+Monitor Resource Utilization
+
+kubectl top pods                                                                                       #cmd
+
+Check VPA Adjustments
+
+kubectl describe vpa my-app-vpa                                                                        #cmd
+
+Remove Load Generator (Optional)
+
+kubectl delete pod load-generator                                                                      #cmd
+

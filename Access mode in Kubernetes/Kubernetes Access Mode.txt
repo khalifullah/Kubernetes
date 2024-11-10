@@ -1,0 +1,10 @@
+Kubernetes Access Mode:
+
+ReadWriteOnce (RWO):
+The volume can be mounted as read-write by a single node. This means that only one pod can write to the volume at any given time, though multiple pods can read from it if they are on the same node.
+
+ReadOnlyMany (ROX):
+The volume can be mounted as read-only by many nodes. This allows multiple pods across different nodes to read from the volume, but none can write to it.
+
+ReadWriteMany (RWX):
+The volume can be mounted as read-write by many nodes. This means that multiple pods can write to and read from the volume simultaneously across different nodes. This mode is typically supported by certain types of storage solutions, such as NFS or cloud storage solutions that support shared access.

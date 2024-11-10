@@ -1,0 +1,30 @@
+Metrix installation in Kubernetes cluster.
+
+Ensure the Metrics Server is Installed: You can install the Kubernetes metrics server by applying the official manifest.
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+Verify Metrics Server Installation: After applying the manifest, confirm that the metrics server is up and running:
+kubectl get pods -n kube-system | grep metrics-server
+
+lets view the metrix of nodes
+kubectl top node
+
+Check Metrics Server Logs for Errors: The first step is to inspect the logs of the metrics server to check if it's having trouble collecting or serving metrics.
+kubectl describe deployment metrics-server -n kube-system
+
+kubectl logs -n kube-system deployment/metrics-server
+
+
+Allow Insecure TLS Skips for Metrics Server: You can configure the metrics server to skip TLS verification. This can help resolve the certificate validation issue. Modify the metrics server deployment by adding the following flag to the container's args:
+kubectl edit deployment metrics-server -n kube-system
+
+Add the following argument under the args section:
+- --kubelet-insecure-tls
+
+The args section should look something like this:
+containers:
+- args:
+  - --cert-dir=/tmp
+  - --secure-port=10250
+  - --kubelet-insecure-tls
+
